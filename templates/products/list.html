@@ -7,7 +7,7 @@
 </head>
 <body>
 <div class="container">
-    <h1>🛍️ Product Shop <span class="badge">Lab 8 — 1:1 Relationship</span></h1>
+    <h1>🛍️ Product Shop <span class="badge">Lab 8 — 1:1 &amp; 1:N Relationship</span></h1>
 
     <!-- Success message -->
     <div class="alert alert-success" th:if="${message}" th:text="${message}"></div>
@@ -25,8 +25,9 @@
             <th>ราคา (บาท)</th>
             <th>ส่วนลด</th>
             <th>ราคาสุทธิ</th>
-            <th>รับประกัน</th>
-            <th>น้ำหนัก (kg)</th>
+            <th>รับประกัน (1:1)</th>
+            <th>น้ำหนัก (1:1)</th>
+            <th>รีวิว (1:N)</th>
             <th>จัดการ</th>
         </tr>
         </thead>
@@ -42,13 +43,14 @@
             <td th:text="${#numbers.formatDecimal(product.discountedPrice, 1, 2)}"></td>
             <td th:text="${product.detail != null ? product.detail.warranty : '-'}"></td>
             <td th:text="${product.detail != null ? product.detail.weight : '-'}"></td>
+            <td th:text="${product.reviews != null ? product.reviews.size() + ' รีวิว' : '0 รีวิว'}"></td>
             <td>
                 <a th:href="@{/products/edit/{id}(id=${product.id})}" class="btn btn-sm btn-warning">แก้ไข</a>
                 <a th:href="@{/products/delete/{id}(id=${product.id})}" class="btn btn-sm btn-danger">ลบ</a>
             </td>
         </tr>
         <tr th:if="${#lists.isEmpty(products)}">
-            <td colspan="11" class="text-center">ยังไม่มีสินค้า — กด "+ เพิ่มสินค้าใหม่" เพื่อเริ่มต้น</td>
+            <td colspan="12" class="text-center">ยังไม่มีสินค้า — กด "+ เพิ่มสินค้าใหม่" เพื่อเริ่มต้น</td>
         </tr>
         </tbody>
     </table>

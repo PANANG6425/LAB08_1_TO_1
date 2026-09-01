@@ -1,96 +1,156 @@
-# 🛍️ Lab 8: Table Relationship 1-to-1 — Product Shop
+# 🛍️ Lab 8: Table Relationships — Product Shop
 
 **วิชา:** CP353002 Principles of Software Design  
-**เรื่อง:** ความสัมพันธ์ตาราง 1-to-1 ด้วย Spring Boot + JPA + PostgreSQL  
+**เรื่อง:** ความสัมพันธ์ตาราง 1:1 และ 1:N ด้วย Spring Boot + JPA + PostgreSQL  
 **รูปแบบ:** ทำเดี่ยว
 
 ---
 
 ## 📋 วัตถุประสงค์
 
-1. นักศึกษาเข้าใจความสัมพันธ์แบบ **One-to-One (1:1)** ระหว่างตารางในฐานข้อมูล
-2. นักศึกษาสามารถสร้าง Entity ที่มี `@OneToOne` annotation ได้ถูกต้อง
-3. นักศึกษาเข้าใจการใช้ `@JoinColumn` และ `CascadeType` ในการจัดการความสัมพันธ์
-4. นักศึกษาสามารถทำ CRUD ที่ครอบคลุมข้อมูลจากทั้งสองตารางได้
-5. นักศึกษายังคงปฏิบัติตามหลักการ GRASP, SOLID และ Layered Architecture จาก Lab 7
+1. เข้าใจและอธิบายความแตกต่างของความสัมพันธ์แบบ **One-to-One (1:1)** และ **One-to-Many (1:N)**
+2. สร้าง Entity ที่มี `@OneToOne` และ `@OneToMany` / `@ManyToOne` ได้ถูกต้อง
+3. เข้าใจว่า **SOLID Principles** เกี่ยวข้องกับการออกแบบ Entity และ Relationship อย่างไร
+4. ทำ CRUD ที่ครอบคลุมข้อมูลจากหลายตารางได้
+5. ยังคงใช้ Strategy Pattern, Layered Architecture จาก Lab 7
+
+---
+
+## 🧠 ทบทวน SOLID กับการออกแบบตาราง
+
+| Principle | ความหมาย | เกี่ยวกับ Relationship อย่างไร |
+|---|---|---|
+| **S** — SRP | แต่ละ class/ตารางมีหน้าที่เดียว | แยก `ProductDetail` ออกจาก `Product` — ไม่ยัดทุกอย่างไว้ที่เดียว |
+| **O** — OCP | เปิดรับการขยาย ปิดรับการแก้ไข | เพิ่มตาราง `Review` ใหม่ โดยไม่แก้ Entity `Product` |
+| **L** — LSP | Subclass ใช้แทน Superclass ได้ | Repository Interface ใช้แทนกันได้ทุก Entity |
+| **I** — ISP | Interface ไม่ควรใหญ่เกินไป | แยก `ProductRepository` และ `ReviewRepository` ไม่รวมเป็นตัวเดียว |
+| **D** — DIP | ขึ้นกับ Abstraction ไม่ใช่ Implementation | Service ขึ้นกับ `ProductRepository` (interface) ไม่ใช่ class จริง |
+
+---
+
+## 🔗 ความแตกต่าง 1:1 กับ 1:N
+
+### One-to-One (1:1)
+
+```
+Product (1) ──────── (1) ProductDetail
+```
+
+> Product 1 รายการ มี ProductDetail ได้เพียง 1 รายการ  
+> ✅ ใช้เมื่อ: ข้อมูลเสริมที่ไม่ได้ใช้ทุก query — แยกออกเพื่อ **SRP**
+
+### One-to-Many (1:N)
+
+```
+Product (1) ──────── (N) Review
+```
+
+> Product 1 รายการ มีได้หลาย Review  
+> ✅ ใช้เมื่อ: ข้อมูล child ที่เพิ่มได้ไม่จำกัด — ออกแบบให้ **OCP** (เพิ่ม Review โดยไม่แก้ Product)
+
+### กฎ Foreign Key
+
+| ความสัมพันธ์ | FK อยู่ที่ | Annotation |
+|---|---|---|
+| 1:1 | ฝั่ง Owner (Product มี `detail_id`) | `@OneToOne` + `@JoinColumn` |
+| 1:N | ฝั่ง Many (Review มี `product_id`) | `@ManyToOne` + `@JoinColumn` |
 
 ---
 
 ## 🎯 โจทย์
 
-ต่อยอดจาก **Product Shop** ใน Lab 7 โดยเพิ่มตาราง **ProductDetail** ที่มีความสัมพันธ์แบบ **1-to-1** กับตาราง **Product**
+ต่อยอดจาก Lab 7 เพิ่ม 2 ความสัมพันธ์:
 
-```
-Product (1) ──────── (1) ProductDetail
-  id                       id
-  name                     description
-  category                 warranty
-  brand                    weight
-  stock                    dimensions
-  price                    manufacturedCountry
-  discountType
-```
+**Part A — 1:1** `Product ↔ ProductDetail`  
+ข้อมูลเสริมสินค้า: description, warranty, weight, dimensions
 
-> ✅ Product 1 รายการ มี ProductDetail ได้เพียง 1 รายการเท่านั้น  
-> ✅ ProductDetail 1 รายการ เป็นของ Product เพียง 1 รายการเท่านั้น
-
-**สิ่งที่ให้:**
-- ไฟล์ Thymeleaf Templates ครบ 4 หน้า (รองรับข้อมูลจากทั้งสองตาราง)
-- ไฟล์ CSS (`style.css`)
-- ไฟล์ `pom.xml` พร้อมใช้งาน
-
-**สิ่งที่นักศึกษาต้องทำเอง:**
-- สร้าง Entity `Product.java` และ `ProductDetail.java` พร้อม `@OneToOne`
-- สร้าง `ProductRepository.java` และ `ProductDetailRepository.java`
-- สร้าง Strategy Package (เหมือน Lab 7)
-- สร้าง `ProductService.java` ที่จัดการทั้งสองตาราง
-- สร้าง `ProductController.java` ที่ทำ CRUD ครบทุกฟังก์ชัน
-- ตั้งค่า Database ใน `application.properties`
-
-### 📛 การตั้งชื่อโปรเจค
-
-```
-lab8-{รหัสนักศึกษา}-sec{หมายเลข section}
-```
-
-| รหัสนักศึกษา | Section | ชื่อโปรเจค |
-|---|---|---|
-| 673380001-1 | 1 | `lab8-673380001-1-sec1` |
-| 673380123-4 | 2 | `lab8-673380123-4-sec2` |
+**Part B — 1:N** `Product → Review`  
+รีวิวสินค้า: reviewer, rating, comment, reviewDate
 
 ---
 
-## 📦 Entity Fields ที่ต้องสร้าง
+## 📂 โครงสร้างโปรเจกต์
+
+```
+src/main/java/com/example/demo/
+├── DemoApplication.java
+├── model/
+│   ├── Product.java              ← @OneToOne → ProductDetail
+│   │                               @OneToMany → List<Review>
+│   ├── ProductDetail.java        ← @OneToOne(mappedBy)
+│   └── Review.java               ← @ManyToOne → Product (FK: product_id)
+├── repository/
+│   ├── ProductRepository.java         ← extends JpaRepository (DIP)
+│   ├── ProductDetailRepository.java
+│   └── ReviewRepository.java
+├── strategy/
+│   ├── DiscountStrategy.java          (interface — ISP)
+│   ├── NoDiscountStrategy.java
+│   ├── MemberDiscountStrategy.java    (ลด 10%)
+│   ├── SeasonalSaleStrategy.java      (ลด 20%)
+│   └── DiscountContext.java
+├── service/
+│   └── ProductService.java            ← SRP: business logic เท่านั้น
+└── controller/
+    └── ProductController.java         ← SRP: รับ-ส่ง HTTP เท่านั้น
+
+src/main/resources/
+├── application.properties
+├── static/css/style.css               ← ✅ มีให้แล้ว
+└── templates/products/
+    ├── list.html                      ← ✅ มีให้แล้ว
+    ├── add.html                       ← ✅ มีให้แล้ว (มีฟอร์ม ProductDetail)
+    ├── edit.html                      ← ✅ มีให้แล้ว
+    └── delete.html                    ← ✅ มีให้แล้ว
+```
+
+---
+
+## 📦 Entity Fields
 
 ### Product.java
 
-| Field | Type | Annotation | คำอธิบาย |
+| Field | Type | Annotation | หมายเหตุ |
 |---|---|---|---|
-| `id` | Long | `@Id @GeneratedValue` | Primary Key |
+| `id` | Long | `@Id @GeneratedValue` | PK |
 | `name` | String | `@Column` | ชื่อสินค้า |
 | `category` | String | `@Column` | หมวดหมู่ |
 | `brand` | String | `@Column` | ยี่ห้อ |
 | `stock` | Integer | `@Column` | จำนวนในคลัง |
-| `price` | Double | `@Column` | ราคาปกติ |
+| `price` | Double | `@Column` | ราคา |
 | `discountType` | String | `@Column` | ประเภทส่วนลด |
-| `detail` | ProductDetail | `@OneToOne(cascade = CascadeType.ALL)` | ความสัมพันธ์ 1:1 |
+| `detail` | ProductDetail | `@OneToOne(cascade=ALL)` + `@JoinColumn` | **1:1** |
+| `reviews` | List\<Review\> | `@OneToMany(mappedBy="product")` | **1:N** |
 
 ### ProductDetail.java
 
-| Field | Type | Annotation | คำอธิบาย |
-|---|---|---|---|
-| `id` | Long | `@Id @GeneratedValue` | Primary Key |
-| `description` | String | `@Column` | รายละเอียดสินค้า |
-| `warranty` | String | `@Column` | ระยะเวลารับประกัน เช่น `1 Year` |
-| `weight` | Double | `@Column` | น้ำหนัก (กิโลกรัม) |
-| `dimensions` | String | `@Column` | ขนาด เช่น `15x7x0.8 cm` |
-| `manufacturedCountry` | String | `@Column` | ประเทศที่ผลิต |
-| `product` | Product | `@OneToOne(mappedBy = "detail")` | ด้าน inverse ของความสัมพันธ์ |
+| Field | Type | หมายเหตุ |
+|---|---|---|
+| `id` | Long | PK |
+| `description` | String | รายละเอียดสินค้า |
+| `warranty` | String | รับประกัน เช่น `1 Year` |
+| `weight` | Double | น้ำหนัก (kg) |
+| `dimensions` | String | ขนาด เช่น `15x7x0.8 cm` |
+| `manufacturedCountry` | String | ประเทศที่ผลิต |
+| `product` | Product | `@OneToOne(mappedBy="detail")` — inverse |
 
-### ตัวอย่าง Code Annotation ใน Entity
+### Review.java ← ใหม่
+
+| Field | Type | Annotation | หมายเหตุ |
+|---|---|---|---|
+| `id` | Long | `@Id @GeneratedValue` | PK |
+| `reviewer` | String | `@Column` | ชื่อผู้รีวิว |
+| `rating` | Integer | `@Column` | คะแนน 1-5 |
+| `comment` | String | `@Column` | ความเห็น |
+| `reviewDate` | LocalDate | `@Column` | วันที่รีวิว |
+| `product` | Product | `@ManyToOne` + `@JoinColumn(name="product_id")` | **FK อยู่ที่นี่** |
+
+---
+
+## 💡 ตัวอย่าง Code Annotation
 
 ```java
-// Product.java
+// Product.java — เจ้าของทั้ง 1:1 และ 1:N
 @Entity
 @Table(name = "products")
 public class Product {
@@ -101,60 +161,35 @@ public class Product {
 
     // ... fields อื่นๆ ...
 
+    // ── 1:1 กับ ProductDetail ──
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "detail_id", referencedColumnName = "id")
     private ProductDetail detail;
+
+    // ── 1:N กับ Review ──
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
+    private List<Review> reviews = new ArrayList<>();
 }
 
-// ProductDetail.java
+// Review.java — ฝั่ง Many เก็บ FK
 @Entity
-@Table(name = "product_details")
-public class ProductDetail {
+@Table(name = "reviews")
+public class Review {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // ... fields อื่นๆ ...
+    private String reviewer;
+    private Integer rating;
+    private String comment;
+    private LocalDate reviewDate;
 
-    @OneToOne(mappedBy = "detail")
+    // FK อยู่ที่ฝั่ง Many เสมอ
+    @ManyToOne
+    @JoinColumn(name = "product_id")
     private Product product;
 }
-```
-
----
-
-## 📂 โครงสร้างโปรเจค ← ❌ นักศึกษาต้องสร้างเอง
-
-```
-src/main/java/com/example/demo/
-├── DemoApplication.java
-├── model/
-│   ├── Product.java              ← ❌ มี @OneToOne → ProductDetail
-│   └── ProductDetail.java        ← ❌ มี @OneToOne(mappedBy)
-├── repository/
-│   ├── ProductRepository.java    ← ❌ นักศึกษาสร้างเอง
-│   └── ProductDetailRepository.java ← ❌ นักศึกษาสร้างเอง
-├── strategy/
-│   ├── DiscountStrategy.java     (interface)
-│   ├── NoDiscountStrategy.java
-│   ├── MemberDiscountStrategy.java   (ลด 10%)
-│   ├── SeasonalSaleStrategy.java     (ลด 20%)
-│   └── DiscountContext.java
-├── service/
-│   └── ProductService.java       ← ❌ จัดการทั้งสองตาราง
-└── controller/
-    └── ProductController.java    ← ❌ CRUD ครบทุกฟังก์ชัน
-
-src/main/resources/
-├── application.properties
-├── static/css/
-│   └── style.css                 ← ✅ มีให้แล้ว
-└── templates/products/
-    ├── list.html                 ← ✅ มีให้แล้ว
-    ├── add.html                  ← ✅ มีให้แล้ว (มีฟอร์ม ProductDetail ด้วย)
-    ├── edit.html                 ← ✅ มีให้แล้ว
-    └── delete.html               ← ✅ มีให้แล้ว
 ```
 
 ---
@@ -163,7 +198,7 @@ src/main/resources/
 
 ### ติดตั้ง PostgreSQL
 
-**Windows:** ดาวน์โหลดจาก https://www.postgresql.org/download/windows/ → รัน `.exe` → กำหนด password สำหรับ `postgres`
+**Windows:** https://www.postgresql.org/download/windows/ → รัน `.exe` → จำ password ของ `postgres`
 
 **macOS:**
 ```bash
@@ -179,11 +214,9 @@ CREATE DATABASE lab8shop;
 \q
 ```
 
-### ตั้งค่า `application.properties`
+### application.properties
 
 ```properties
-spring.application.name=demo
-
 spring.datasource.url=jdbc:postgresql://localhost:5432/lab8shop
 spring.datasource.username=postgres
 spring.datasource.password=YOUR_PASSWORD_HERE
@@ -193,68 +226,63 @@ spring.jpa.hibernate.ddl-auto=update
 spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
 ```
 
-> ✅ Spring JPA จะสร้างตาราง `products` และ `product_details` ให้อัตโนมัติ  
-> ✅ Foreign key `detail_id` ใน `products` จะถูกสร้างอัตโนมัติจาก `@JoinColumn`
+> ✅ Spring JPA จะสร้างตาราง `products`, `product_details`, `reviews` พร้อม FK ให้อัตโนมัติ
+
+---
+
+## 🔄 URL Mappings
+
+| Method | URL | หน้าที่ |
+|---|---|---|
+| GET | `/products` | รายการสินค้า |
+| GET | `/products/add` | ฟอร์มเพิ่มสินค้า |
+| POST | `/products/save` | บันทึกสินค้า (+ ProductDetail) |
+| GET | `/products/edit/{id}` | ฟอร์มแก้ไข |
+| POST | `/products/update/{id}` | อัปเดต |
+| GET | `/products/delete/{id}` | ยืนยันลบ |
+| POST | `/products/delete/{id}` | ลบสินค้า |
 
 ---
 
 ## 📝 สิ่งที่ต้องส่ง
 
-1. **ลิ้งค์ Git Repository** — Push โปรเจคที่ทำเสร็จขึ้น GitHub
+1. **ลิ้งค์ GitHub Repository** ชื่อ `lab8-{รหัสนักศึกษา}-sec{section}`
 
-2. **ไฟล์ PDF เล่มรายงาน** แบ่งเป็น 3 ส่วน:
+2. **PDF รายงาน** แบ่งเป็น 3 ส่วน:
 
-**ส่วนที่ 1: Software Design & Relationship Explanation**
-- 🔗 **อธิบายความสัมพันธ์ 1:1** ระหว่าง `Product` และ `ProductDetail`  
-  อธิบายว่าทำไมถึงแยกตารางแทนที่จะรวมไว้ตารางเดียว (High Cohesion, SRP)
-- 🧩 **Strategy Pattern** — เหมือน Lab 7
-- 🏗️ **Layered Architecture** — Entity, Repository, Service, Controller
-- 🔄 **Execution Flow** — HTTP Request → Controller → Service → Repository → DB
+**ส่วนที่ 1: หลักการออกแบบ**
+- อธิบายว่าใช้ **SOLID** ส่วนไหนบ้างและเกี่ยวข้องกับ Entity อย่างไร
+- อธิบายความแตกต่างของ **1:1 กับ 1:N** — ใช้กรณีไหนควรใช้แบบไหน
+- อธิบาย **Strategy Pattern** สำหรับคำนวณส่วนลด
+- อธิบาย **Execution Flow** ตั้งแต่ HTTP Request → DB
 
-**ส่วนที่ 2: Code Implementation & Explanation**
-- Code ของ `Product.java` และ `ProductDetail.java` พร้อมอธิบาย `@OneToOne`, `@JoinColumn`, `CascadeType`
-- Code ของ Service และ Controller ที่จัดการข้อมูลจากทั้งสองตาราง
+**ส่วนที่ 2: Code + คำอธิบาย**
+- Entity ทั้ง 3 ตัว (`Product`, `ProductDetail`, `Review`) พร้อมอธิบาย annotation
+- Service และ Controller พร้อมอธิบาย Constructor Injection
 
-**ส่วนที่ 3: Web Application & Database Screenshots**
+**ส่วนที่ 3: ภาพหน้าจอ**
 
-> 📌 ใส่รหัสนักศึกษาและ Section ลงในชื่อสินค้าด้วย
+> 📌 ใส่รหัสนักศึกษาและ Section ในชื่อสินค้า เช่น `iPhone 15 Pro (673380123-4 SEC 1)`
 
-**ตัวอย่างการกรอกข้อมูล:**
-
-| Field | ตัวอย่าง |
+| ภาพที่ต้องถ่าย | รายละเอียด |
 |---|---|
-| ชื่อสินค้า (Name) | `MacBook Pro 14 (673380123-4 SEC 1)` |
-| หมวดหมู่ (Category) | `Electronics` |
-| ยี่ห้อ (Brand) | `Apple` |
-| จำนวนในคลัง (Stock) | `20` |
-| ราคาปกติ (Price) | `69,900.00` |
-| รายละเอียด (Description) | `Apple M3 Pro chip, 18GB RAM, 512GB SSD` |
-| รับประกัน (Warranty) | `1 Year` |
-| น้ำหนัก (Weight) | `1.61 kg` |
-| ขนาด (Dimensions) | `31.26 x 22.12 x 1.55 cm` |
-| ผลิตที่ (Manufactured Country) | `China` |
-
-**ภาพที่ต้องถ่าย:**
-- หน้าจอเพิ่มสินค้า (Create) — กรอกข้อมูลทั้ง Product และ ProductDetail
-- หน้าจอรายการสินค้า (Read) — แสดงข้อมูลครบทั้งสองตาราง
-- หน้าจอแก้ไขสินค้า (Update)
-- หน้าจอยืนยันลบ + ผลหลังลบ (Delete)
-- หน้าจอ pgAdmin — แสดงตาราง `products` และ `product_details` พร้อม foreign key
+| Create | กรอกข้อมูล Product + ProductDetail |
+| Read | รายการสินค้าในตาราง |
+| Update | หน้าฟอร์มแก้ไข |
+| Delete | ยืนยันลบ + หลังลบ |
+| Database | pgAdmin แสดง 3 ตาราง (`products`, `product_details`, `reviews`) พร้อม FK |
 
 ---
 
 ## 📊 เกณฑ์การให้คะแนน
 
-| หัวข้อ | คะแนน | รายละเอียด |
-|---|---|---|
-| **1:1 Relationship Design** | 25% | สร้าง `@OneToOne`, `@JoinColumn`, `CascadeType` ถูกต้องทั้งสอง Entity |
-| **Strategy Pattern** | 10% | ใช้ Strategy Pattern ในการคำนวณส่วนลดได้ถูกต้อง |
-| **Repository & Service** | 15% | จัดการข้อมูลจากทั้งสองตารางใน Service Layer ได้ถูกต้อง |
-| **Controller & CRUD** | 15% | CRUD ครบทุกฟังก์ชัน ใช้ Constructor Injection |
-| **Database** | 15% | ตาราง `products` และ `product_details` ถูกสร้างใน DB พร้อม foreign key |
-| **PDF Report** | 20% | อธิบายความสัมพันธ์ 1:1, Annotation และ Execution Flow ครบถ้วน |
-| **รวม** | **100%** | |
-
----
-
-> **หมายเหตุ:** นักศึกษาสามารถปรับแต่งหน้าเว็บเพิ่มเติมได้ แต่ความสัมพันธ์ 1:1 และหลักการออกแบบต้องถูกต้อง
+| หัวข้อ | คะแนน |
+|---|---|
+| SOLID Principles — อธิบายและประยุกต์ใช้ | 20% |
+| 1:1 Relationship (Entity + annotation) | 20% |
+| 1:N Relationship (Entity + annotation) | 20% |
+| Repository, Service, Controller | 15% |
+| Strategy Pattern | 10% |
+| Database (3 ตาราง + FK ถูกต้อง) | 10% |
+| PDF Report | 5% |
+| **รวม** | **100%** |

@@ -127,6 +127,18 @@ h2 {
     background: #FFF5F5;
 }
 
+.card-review {
+    border: 2px dashed #F6AD55;
+    background: #FFFAF0;
+}
+
+.hint {
+    font-size: 12px;
+    color: #92400E;
+    margin-bottom: 14px;
+    font-style: italic;
+}
+
 /* ── Form ── */
 .form-row {
     display: grid;

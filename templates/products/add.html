@@ -2,7 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>เพิ่มสินค้า — Lab 8</title>
+    <title>เพิ่มสินค้า — Lab 8 (1:1 &amp; 1:N)</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
@@ -77,6 +77,34 @@
                 <div class="form-group">
                     <label>ประเทศที่ผลิต</label>
                     <input type="text" th:field="*{detail.manufacturedCountry}" placeholder="เช่น China, USA, Japan">
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Review Info (1:N) ── -->
+        <div class="card card-review">
+            <h2>⭐ รีวิวสินค้า (Review) — ความสัมพันธ์ 1:N</h2>
+            <p class="hint">เพิ่มรีวิวแรกพร้อมกับสินค้า (สามารถเพิ่มรีวิวเพิ่มเติมภายหลังได้)</p>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>ชื่อผู้รีวิว</label>
+                    <input type="text" th:field="*{reviews[0].reviewer}" placeholder="เช่น สมชาย ใจดี">
+                </div>
+                <div class="form-group">
+                    <label>คะแนน (1-5)</label>
+                    <select th:field="*{reviews[0].rating}">
+                        <option value="5">⭐⭐⭐⭐⭐ (5)</option>
+                        <option value="4">⭐⭐⭐⭐ (4)</option>
+                        <option value="3">⭐⭐⭐ (3)</option>
+                        <option value="2">⭐⭐ (2)</option>
+                        <option value="1">⭐ (1)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group full-width">
+                    <label>ความเห็น</label>
+                    <textarea th:field="*{reviews[0].comment}" rows="2" placeholder="เขียนรีวิวสินค้า..."></textarea>
                 </div>
             </div>
         </div>
